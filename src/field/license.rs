@@ -4,8 +4,10 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
 use license_exprs::{validate_license_expr, ParseError as LicenseParseError};
-use serde::ser::{Serialize, Serializer};
 use serde::de::{Deserialize, Deserializer, Error as DeError, Visitor};
+use serde::ser::{Serialize, Serializer};
+
+use field::Field;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct License(String);
@@ -63,6 +65,20 @@ impl Serialize for License {
     {
         let out = self.to_string();
         serializer.serialize_str(&out)
+    }
+}
+
+impl Field for Option<License> {
+    type Input = Option<String>;
+    type Error = ParseError;
+
+    const XPATH_EXPR: &'static str = "/component/license/text()";
+
+    fn construct(input: Self::Input) -> Result<Self, Self::Error> {
+        match input {
+            Some(s) => License::from_str(&s).map(Option::Some),
+            None => Ok(None),
+        }
     }
 }
 

@@ -2,7 +2,10 @@
 
 #[macro_use]
 extern crate failure;
+#[macro_use]
+extern crate lazy_static;
 extern crate license_exprs;
+extern crate regex;
 #[macro_use]
 extern crate serde;
 extern crate serde_xml_rs;
@@ -11,67 +14,86 @@ extern crate tld as tld_rs;
 extern crate url;
 #[macro_use]
 extern crate url_serde;
+extern crate xpath_reader;
 
-mod id;
-mod license;
+pub mod comp_type;
+pub mod field;
+pub mod metainfo;
 
-use std::path::PathBuf;
+use xpath_reader::Reader;
 
-use url::Url;
-
-use id::Id;
-use license::License;
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-enum Icon {
-    Stock {
-        id: String,
-    },
-    Local {
-        path: PathBuf,
-    },
-    Remote { 
-        url: Url,
-    },
-}
+use self::field::copyright::Copyright;
+use self::field::icon::Icon;
+use self::field::id::Id;
+use self::field::license::License;
+use self::field::name::Name;
+use self::field::pkg_name::PkgName;
+use self::field::summary::Summary;
+use self::field::Field;
+use self::metainfo::ParseError;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AppStream {
+    copyright: Copyright,
     id: Id,
+    name: Name,
+    summary: Summary,
+    pkg_name: PkgName,
+    license: Option<License>,
     metadata_license: Option<License>,
-    name: Option<String>,
-    summary: Option<String>,
-    icon: Option<Icon>,
+    icons: Option<Vec<Icon>>,
 }
 
-#[cfg(test)]
-mod tests {
-    use serde_xml_rs::{deserialize, serialize};
-
-    use super::*;
-
-    const SIMPLE: &str = r#"
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!-- Copyright 2013 First Lastname <your@email.com> -->
-        <component type="desktop-application">
-            <name>blah</name>
-            <id>org.foo.bar</id>
-            <metadata_license>MIT</metadata_license>
-            <icon type="local">/usr/share/icon.png</icon>
-        </component>
-    "#;
-
-    #[test]
-    fn deserialize_simple() {
-        let bytes: Vec<u8> = SIMPLE.bytes().collect();
-        let actual: AppStream =
-            deserialize(bytes.as_slice()).expect("Invalid AppStream specification");
-
-        println!("{:#?}", actual);
-
-        let mut buf = Vec::new();
-        serialize(actual, &mut buf).expect("Unable to serialize");
-        let mut s = String::from_utf8(buf).expect("Unable to parse string");
-        println!("{}", s);
+impl AppStream {
+    pub(crate) fn parse<'d>(reader: Reader<'d>) -> Result<Self, ParseError> {
+        Ok(AppStream {
+            copyright: parse_field(&reader)?,
+            id: parse_field(&reader)?,
+            name: parse_field(&reader)?,
+            summary: parse_field(&reader)?,
+            pkg_name: parse_field(&reader)?,
+            license: parse_field(&reader)?,
+            metadata_license: parse_field(&reader)?,
+            icons: None,
+        })
     }
+
+    pub fn copyright(&self) -> &Copyright {
+        &self.copyright
+    }
+
+    pub fn id(&self) -> &Id {
+        &self.id
+    }
+
+    pub fn name(&self) -> &Name {
+        &self.name
+    }
+
+    pub fn summary(&self) -> &Summary {
+        &self.summary
+    }
+
+    pub fn pkg_name(&self) -> &PkgName {
+        &self.pkg_name
+    }
+
+    pub fn license(&self) -> Option<&License> {
+        self.license.as_ref()
+    }
+
+    pub fn metadata_license(&self) -> Option<&License> {
+        self.metadata_license.as_ref()
+    }
+
+    pub fn icons(&self) -> Option<&[Icon]> {
+        self.icons.as_ref().map(|vec| vec.as_slice())
+    }
+}
+
+fn parse_field<'d, F: Field>(reader: &Reader<'d>) -> Result<F, ParseError> {
+    let input = F::load(&reader).map_err(ParseError::Xpath)?;
+    F::construct(input)
+        .map_err(|e| e.into())
+        .map_err(ParseError::FieldParseFail)
 }

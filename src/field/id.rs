@@ -3,6 +3,8 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
+use super::Field;
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Id {
     tld: TopLevelDomain,
@@ -62,6 +64,17 @@ impl FromStr for Id {
         }
 
         Id::parse(fields[0], fields[1], fields[2])
+    }
+}
+
+impl Field for Id {
+    type Input = String;
+    type Error = ParseError;
+
+    const XPATH_EXPR: &'static str = "/component/id/text()";
+
+    fn construct(input: Self::Input) -> Result<Self, Self::Error> {
+        Id::from_str(&input)
     }
 }
 
