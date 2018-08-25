@@ -50,15 +50,15 @@ pub enum Icon {
     },
 }
 
-impl Field for Option<Icon> {
-    type Input = Vec<String>;
+impl Field for Option<Vec<Icon>> {
+    type Input = Vec<Option<String>>;
     type Error = ParseError;
 
-    const XPATH_EXPR: &'static str = "/component/icon[@type]/text()";
+    const XPATH_EXPR: &'static str = "/component/icon/@type | /component/icon[@type]/text()";
 
     fn construct(input: Self::Input) -> Result<Self, Self::Error> {
         println!("{:?}", input);
-        Ok(Some(Icon::Stock { id: "".to_string() }))
+        Ok(None)
     }
 }
 

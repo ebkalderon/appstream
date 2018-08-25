@@ -55,7 +55,7 @@ impl AppStream {
             summary: parse_field(&reader)?,
             license: parse_field(&reader)?,
             metadata_license: parse_field(&reader)?,
-            icons: None,
+            icons: parse_field(&reader)?,
             categories: parse_field(&reader)?,
         })
     }
