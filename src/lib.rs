@@ -10,38 +10,39 @@ extern crate regex;
 extern crate serde;
 extern crate serde_xml_rs;
 extern crate sxd_document;
-extern crate tld as tld_rs;
+extern crate psl;
 extern crate url;
-#[macro_use]
-extern crate url_serde;
 extern crate xpath_reader;
 
 pub mod comp_type;
+pub mod component;
 pub mod field;
 pub mod metainfo;
 
 use xpath_reader::Reader;
 
-use self::field::copyright::Copyright;
-use self::field::icon::Icon;
-use self::field::id::Id;
-use self::field::license::License;
-use self::field::name::Name;
-use self::field::pkg_name::PkgName;
-use self::field::summary::Summary;
-use self::field::Field;
-use self::metainfo::ParseError;
+use field::category::Categories;
+use field::copyright::Copyright;
+use field::icon::Icon;
+use field::id::Id;
+use field::license::License;
+use field::name::Name;
+use field::pkg_name::PkgName;
+use field::summary::Summary;
+use field::Field;
+use metainfo::ParseError;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AppStream {
     copyright: Copyright,
     id: Id,
+    pkg_name: PkgName,
     name: Name,
     summary: Summary,
-    pkg_name: PkgName,
     license: Option<License>,
     metadata_license: Option<License>,
     icons: Option<Vec<Icon>>,
+    categories: Option<Categories>,
 }
 
 impl AppStream {
@@ -49,12 +50,13 @@ impl AppStream {
         Ok(AppStream {
             copyright: parse_field(&reader)?,
             id: parse_field(&reader)?,
+            pkg_name: parse_field(&reader)?,
             name: parse_field(&reader)?,
             summary: parse_field(&reader)?,
-            pkg_name: parse_field(&reader)?,
             license: parse_field(&reader)?,
             metadata_license: parse_field(&reader)?,
             icons: None,
+            categories: parse_field(&reader)?,
         })
     }
 
@@ -66,16 +68,16 @@ impl AppStream {
         &self.id
     }
 
+    pub fn pkg_name(&self) -> &PkgName {
+        &self.pkg_name
+    }
+
     pub fn name(&self) -> &Name {
         &self.name
     }
 
     pub fn summary(&self) -> &Summary {
         &self.summary
-    }
-
-    pub fn pkg_name(&self) -> &PkgName {
-        &self.pkg_name
     }
 
     pub fn license(&self) -> Option<&License> {
@@ -88,6 +90,10 @@ impl AppStream {
 
     pub fn icons(&self) -> Option<&[Icon]> {
         self.icons.as_ref().map(|vec| vec.as_slice())
+    }
+
+    pub fn categories(&self) -> Option<&Categories> {
+        self.categories.as_ref()
     }
 }
 

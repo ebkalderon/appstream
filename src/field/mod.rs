@@ -1,6 +1,9 @@
+use std::fmt::Debug;
+
 use failure::Fail;
 use xpath_reader::{Error as XpathError, FromXml, Reader};
 
+pub mod category;
 pub mod copyright;
 pub mod icon;
 pub mod id;
@@ -9,7 +12,7 @@ pub mod name;
 pub mod pkg_name;
 pub mod summary;
 
-pub trait Field: Sized + ::std::fmt::Debug {
+pub trait Field: Sized + Debug {
     type Input: FromXml;
     type Error: Fail + Send + Sync + 'static;
 

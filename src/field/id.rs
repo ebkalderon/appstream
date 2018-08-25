@@ -28,7 +28,7 @@ impl Id {
     where
         S: AsRef<str>,
     {
-        let fields: Vec<&str> = vec![tld.as_ref(), vendor.as_ref(), product.as_ref()];
+        let fields = [tld.as_ref(), vendor.as_ref(), product.as_ref()];
 
         for (i, field) in fields.iter().enumerate() {
             for ch in field.chars() {
@@ -103,10 +103,10 @@ impl FromStr for TopLevelDomain {
     type Err = UnrecognizedTldError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use tld_rs::exist;
+        use psl::{List, Psl};
 
         let domain = s.to_string();
-        if exist(&domain) {
+        if List::new().domain(&format!("example.{}", domain)).is_some() {
             Ok(TopLevelDomain(domain))
         } else {
             Err(UnrecognizedTldError(domain))

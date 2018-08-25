@@ -1,9 +1,34 @@
+use std::iter::Iterator;
 use std::path::PathBuf;
 
 use failure::Error;
 use url::Url;
 
 use super::Field;
+
+#[derive(Debug)]
+pub struct Icons<'a> {
+    icons: &'a [Icon],
+    cur: usize,
+}
+
+impl<'a> Icons<'a> {
+    pub(crate) fn new(icons: &'a [Icon]) -> Self {
+        Icons {
+            icons,
+            cur: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for Icons<'a> {
+    type Item = &'a Icon;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.cur += 1;
+        self.icons.get(self.cur)
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Icon {
@@ -26,7 +51,7 @@ pub enum Icon {
 }
 
 impl Field for Option<Icon> {
-    type Input = Vec<Option<String>>;
+    type Input = Vec<String>;
     type Error = ParseError;
 
     const XPATH_EXPR: &'static str = "/component/icon[@type]/text()";
